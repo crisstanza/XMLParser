@@ -6,6 +6,8 @@ REM
 REM Author: Cris Stanza, 30-Jul-2015
 REM
 
+set CP=.\lib\ojdbc6_g.jar;.\lib\sdoapi-11.2.0.jar;.\lib\sdoutl-1.0.jar
+
 :MAIN_MENU
 	cls
 	echo.
@@ -30,21 +32,21 @@ REM
 :OPTION_1
 	echo.
 	if not exist .\classes md .\classes
-	cd .\src
-	javac -d ..\classes -cp . *.java
-	cd ..
+	javac -sourcepath .\src -d .\classes -cp .\src;%CP% .\src\*.java
 	pause
 	goto MAIN_MENU
 
 :OPTION_2
 	echo.
-	java -cp .;.\classes Main
+	java -cp .;.\classes;%CP% Main
 	pause
 	goto MAIN_MENU
 
 :OPTION_3
 	echo.
 	if exist .\classes rmdir /s/q .\classes
+	if exist .\out rmdir /s/q .\out
+	md .\out
 	pause
 	goto MAIN_MENU
 
