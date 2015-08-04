@@ -18,15 +18,17 @@ public final class Main {
 	}
 
 	private final void start() throws Exception {
-		final MyXMLParser parser = new MyXMLParser(MyConstants.GEOMETRY_3);
+		final MyXMLParser parser = new MyXMLParser(MyConstants.GEOMETRY_S);
 		{
 			parser.parse();
-			parser.printPLSQL();
-			parser.printSQL();
-			parser.printJS();
-			parser.printWKT();
-			parser.printWKTJS();
-			parser.printTXT();
+			// parser.printPLSQL();
+			// parser.printSQL();
+			// parser.printJS();
+			// parser.printWKT();
+			// parser.printWKTR();
+			// parser.printWKTJS();
+			parser.printWKTJSR();
+			// parser.printTXT();
 		}
 	}
 

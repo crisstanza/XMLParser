@@ -73,12 +73,12 @@ public final class MyXMLParser {
 			final Node attribute = XmlUtils.getAttribute(column, "NAME");
 			if (attribute.getNodeValue().equals("ID_PROJETO")) {
 				myData.project = column.getTextContent();
-			} else if (attribute.getNodeValue().equals("GEOMETRY")) {
+			} else if (attribute.getNodeValue().equals("GEOM_ORIG")) {
 				myData.geometry[MyConstants.GEOMETRY_ORIG] = fix(column.getTextContent());
-			} else if (attribute.getNodeValue().equals("GEOMETRY_2")) {
-				myData.geometry[MyConstants.GEOMETRY_2] = fix(column.getTextContent());
-			} else if (attribute.getNodeValue().equals("GEOMETRY_3")) {
-				myData.geometry[MyConstants.GEOMETRY_3] = fix(column.getTextContent());
+			} else if (attribute.getNodeValue().equals("GEOM_S")) {
+				myData.geometry[MyConstants.GEOMETRY_S] = fix(column.getTextContent());
+			} else if (attribute.getNodeValue().equals("GEOM_SR")) {
+				myData.geometry[MyConstants.GEOMETRY_SR] = fix(column.getTextContent());
 			}
 		}
 		return myData;
@@ -166,10 +166,24 @@ public final class MyXMLParser {
 		BufferedWriter writer = null;
 		try {
 			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_TXT));
-			writer.write("Total: " + geoData.size() + System.lineSeparator());
+			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
 			writer.write(System.lineSeparator());
 			for (MyGeometry geometry : geoData) {
-				writer.write("project: " + geometry.project + "		wkt: " + geometry.wkt + System.lineSeparator());
+				writer.write(geometry.wkt + " -- " + geometry.project + System.lineSeparator());
+			}
+		} finally {
+			close(writer);
+		}
+	}
+
+	public void printWKTR() throws Exception {
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_TXT));
+			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
+			writer.write(System.lineSeparator());
+			for (MyGeometry geometry : geoData) {
+				writer.write(reduceWKT(geometry.wkt) + " -- " + geometry.project + System.lineSeparator());
 			}
 		} finally {
 			close(writer);
@@ -190,6 +204,125 @@ public final class MyXMLParser {
 		} finally {
 			close(writer);
 		}
+	}
+
+	public void printWKTJSR() throws Exception {
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_R_JS));
+			writer.write("var g = [];" + System.lineSeparator());
+			for (MyGeometry myGeo : geoData) {
+				if (myGeo.wkt.length() < MyConstants.WKT_STRING_LIMIT) {
+					writer.write("g.push([" + reduceJS(myGeo.wkt) + "]); // " + myGeo.wkt.length() + System.lineSeparator());
+				}
+			}
+			writer.write("var geometries = g;" + System.lineSeparator());
+		} finally {
+			close(writer);
+		}
+	}
+
+	private String reduceWKT(String wkt) {
+		List<Pontos> reduced = reduce(wkt);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < reduced.size(); i++) {
+			Pontos x = reduced.get(i);
+			sb.append(x.getTipo());
+			if (i == 0) {
+				sb.append(" (");
+			}
+			sb.append("(");
+			if (x.getTipo().equals("MULTIPOLYGON")) {
+				sb.append("(");
+			}
+			for (int j = 0; j < x.size(); j++) {
+				sb.append(x.get(j));
+				if (j < x.size() - 1) {
+					sb.append(j % 2 == 0 ? " " : ", ");
+				}
+			}
+			sb.append(")");
+			if (i < reduced.size() - 1) {
+				sb.append(",");
+			} else {
+				if (x.getTipo().equals("MULTIPOLYGON")) {
+					sb.append(")");
+				}
+			}
+		}
+		sb.append(")");
+		return sb.toString();
+	}
+
+	private String reduceJS(String wkt) {
+		List<Pontos> reduced = reduce(wkt);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < reduced.size(); i++) {
+			sb.append("[");
+			List<Double> x = reduced.get(i);
+			for (int j = 0; j < x.size(); j++) {
+				sb.append(x.get(j));
+				if (j < x.size() - 1) {
+					sb.append(",");
+				}
+			}
+			sb.append("]");
+			if (i < reduced.size() - 1) {
+				sb.append(",");
+			}
+		}
+		return sb.toString();
+	}
+
+	private final List<Pontos> reduce(String wkt) {
+		final String js = wkt2js(wkt);
+		String[] parts = js.split("],");
+		List<double[]> partsAsDoubleList = new ArrayList<double[]>();
+		for (int i = 0; i < parts.length; i++) {
+			String part = parts[i];
+			part = part.replaceAll("\\[", "");
+			part = part.replaceAll("\\]", "");
+			partsAsDoubleList.add(toDoubleArray(part));
+		}
+		List<Pontos> reduced = new ArrayList<Pontos>();
+		for (int i = 0; i < partsAsDoubleList.size(); i++) {
+			Pontos doubleList = new Pontos(wkt.split(" ")[0]);
+			double[] doubleArray = partsAsDoubleList.get(i);
+			double last = 0;
+			boolean add = false;
+			for (int j = 0; j < doubleArray.length; j++) {
+				double d = doubleArray[j];
+				if (doubleArray.length > 50) {
+					if (j % 2 == 0) {
+						double diff = Math.abs(d - last);
+						if ((diff > 0.0001) || (j == (doubleArray.length - 2))) {
+							doubleList.add(d);
+							last = d;
+							add = true;
+						} else {
+							add = false;
+						}
+					} else {
+						if (add || j == (doubleArray.length - 1)) {
+							doubleList.add(d);
+						}
+					}
+				} else {
+					doubleList.add(d);
+				}
+			}
+			reduced.add(doubleList);
+		}
+		return reduced;
+	}
+
+	private double[] toDoubleArray(String arrayAsString) {
+		String[] parts = arrayAsString.split(MyConstants.LIST_SEPARATOR);
+		double[] doubleArray = new double[parts.length];
+		for (int i = 0; i < parts.length; i++) {
+			doubleArray[i] = Double.parseDouble(parts[i]);
+		}
+		return doubleArray;
 	}
 
 	private final String wkt2js(final String str) {
@@ -264,8 +397,8 @@ public final class MyXMLParser {
 
 	public static final class MyConstants {
 		public static final int GEOMETRY_ORIG = 0;
-		public static final int GEOMETRY_2 = 1;
-		public static final int GEOMETRY_3 = 2;
+		public static final int GEOMETRY_S = 1;
+		public static final int GEOMETRY_SR = 2;
 
 		private static final String IN_XML = "./in/in.xml";
 		private static final String OUT_PLSQL = "./out/out.plsql";
@@ -274,6 +407,7 @@ public final class MyXMLParser {
 		private static final String OUT_TXT = "./out/out.txt";
 		public static final String OUT_WKT_TXT = "./out/out-wkt.txt";
 		public static final String OUT_WKT_JS = "./out/out-wkt.js";
+		public static final String OUT_WKT_R_JS = "./out/out-wkt-r.js";
 
 		private static final boolean FIX = false;
 
