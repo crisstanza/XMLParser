@@ -1,4 +1,0 @@
-Total: 2
-
-project: 1		Elem Info: 3		Ordinate: 4
-project: 2		Elem Info: 3		Ordinate: 4

@@ -24,10 +24,16 @@ public final class Main {
 			// parser.printPLSQL();
 			// parser.printSQL();
 			// parser.printJS();
-			// parser.printWKT();
-			// parser.printWKTR();
-			// parser.printWKTJS();
-			parser.printWKTJSR();
+			{
+				parser.printWKT_ORIG();
+				parser.printWKT_S();
+				parser.printWKT_SR();
+			}
+			{
+				parser.printWKT_ORIG_JS();
+				parser.printWKT_S_JS();
+				parser.printWKT_SR_JS();
+			}
 			// parser.printTXT();
 		}
 	}

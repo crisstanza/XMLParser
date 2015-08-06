@@ -21,8 +21,7 @@ public final class MyGeometryDao {
 			con = open();
 			st = con.createStatement();
 			sql = new StringBuilder();
-			sql.append("SELECT id_projeto, geom_s FROM BASE_2015_01_DISSOLVE");
-			// sql.append(" WHERE id_projeto = '002'");
+			sql.append("SELECT id_projeto, geom_orig, geom_s FROM BASE_2015_01_DISSOLVE");
 			rs = st.executeQuery(sql.toString());
 			List<MyGeometry> result = new ArrayList<MyGeometry>();
 			while (rs.next()) {
@@ -37,15 +36,20 @@ public final class MyGeometryDao {
 	private final MyGeometry result(ResultSet rs) throws Exception {
 		final MyGeometry myGeometry = new MyGeometry();
 		myGeometry.project = rs.getString(1);
-		oracle.sql.STRUCT struct = (oracle.sql.STRUCT) rs.getObject(2);
+		myGeometry.wkt_orig = object2wkt(rs.getObject(2));
+		myGeometry.wkt_s = object2wkt(rs.getObject(3));
+		return myGeometry;
+	}
+
+	private String object2wkt(Object object) throws Exception {
+		oracle.sql.STRUCT struct = (oracle.sql.STRUCT) object;
 		JGeometry jGeometry = JGeometry.load(struct);
 		try {
-			myGeometry.wkt = new String(new WKT().fromJGeometry(jGeometry));
+			return new String(new WKT().fromJGeometry(jGeometry));
 		} catch (final Exception exc) {
 			exc.printStackTrace();
-			myGeometry.wkt = exc.getMessage();
+			return exc.getMessage();
 		}
-		return myGeometry;
 	}
 
 	private final Connection open() throws Exception {

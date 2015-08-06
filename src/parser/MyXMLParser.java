@@ -54,12 +54,12 @@ public final class MyXMLParser {
 			Collections.sort(geoData, new Comparator<MyGeometry>() {
 				@Override
 				public int compare(MyGeometry o1, MyGeometry o2) {
-					if (o1.wkt == null) {
+					if (o1.wkt_orig == null) {
 						return Integer.MIN_VALUE;
-					} else if (o2.wkt == null) {
+					} else if (o2.wkt_orig == null) {
 						return Integer.MAX_VALUE;
 					} else {
-						return o1.wkt.length() - o2.wkt.length();
+						return o1.wkt_orig.length() - o2.wkt_orig.length();
 					}
 				}
 			});
@@ -145,15 +145,68 @@ public final class MyXMLParser {
 		}
 	}
 
-	public final void printJS() throws Exception {
+	public void printWKT_ORIG() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_ORIG_TXT);
+		}
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_JS));
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_ORIG_TXT));
+			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
+			writer.write(System.lineSeparator());
+			for (MyGeometry geometry : geoData) {
+				writer.write(geometry.wkt_orig + " -- " + geometry.project + System.lineSeparator());
+			}
+		} finally {
+			close(writer);
+		}
+	}
+
+	public void printWKT_S() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_S_TXT);
+		}
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_S_TXT));
+			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
+			writer.write(System.lineSeparator());
+			for (MyGeometry geometry : geoData) {
+				writer.write(geometry.wkt_s + " -- " + geometry.project + System.lineSeparator());
+			}
+		} finally {
+			close(writer);
+		}
+	}
+
+	public void printWKT_SR() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_SR_TXT);
+		}
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_SR_TXT));
+			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
+			writer.write(System.lineSeparator());
+			for (MyGeometry geometry : geoData) {
+				writer.write(reduceWKT(geometry.wkt_s) + " -- " + geometry.project + System.lineSeparator());
+			}
+		} finally {
+			close(writer);
+		}
+	}
+
+	public void printWKT_ORIG_JS() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_ORIG_JS);
+		}
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_ORIG_JS));
 			writer.write("var g = [];" + System.lineSeparator());
-			for (MyData myData : data) {
-				if (myData.geometry[which] != null) {
-					MyGeomData myGeomData = new MyGeomData(myData.geometry[which]);
-					writer.write("g.push([" + myGeomData.ordinate + "]);" + System.lineSeparator());
+			for (MyGeometry myGeo : geoData) {
+				if (myGeo.wkt_orig.length() < MyConstants.WKT_STRING_LIMIT) {
+					writer.write("g.push([" + wkt2js(myGeo.wkt_orig) + "]);" + System.lineSeparator());
 				}
 			}
 			writer.write("var geometries = g;" + System.lineSeparator());
@@ -162,42 +215,17 @@ public final class MyXMLParser {
 		}
 	}
 
-	public void printWKT() throws Exception {
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_TXT));
-			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
-			writer.write(System.lineSeparator());
-			for (MyGeometry geometry : geoData) {
-				writer.write(geometry.wkt + " -- " + geometry.project + System.lineSeparator());
-			}
-		} finally {
-			close(writer);
+	public void printWKT_S_JS() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_S_JS);
 		}
-	}
-
-	public void printWKTR() throws Exception {
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_TXT));
-			writer.write("-- Total: " + geoData.size() + System.lineSeparator());
-			writer.write(System.lineSeparator());
-			for (MyGeometry geometry : geoData) {
-				writer.write(reduceWKT(geometry.wkt) + " -- " + geometry.project + System.lineSeparator());
-			}
-		} finally {
-			close(writer);
-		}
-	}
-
-	public void printWKTJS() throws Exception {
-		BufferedWriter writer = null;
-		try {
-			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_JS));
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_S_JS));
 			writer.write("var g = [];" + System.lineSeparator());
 			for (MyGeometry myGeo : geoData) {
-				if (myGeo.wkt.length() < MyConstants.WKT_STRING_LIMIT) {
-					writer.write("g.push([" + wkt2js(myGeo.wkt) + "]); // " + myGeo.wkt.length() + System.lineSeparator());
+				if (myGeo.wkt_s.length() < MyConstants.WKT_STRING_LIMIT) {
+					writer.write("g.push([" + wkt2js(myGeo.wkt_s) + "]);" + System.lineSeparator());
 				}
 			}
 			writer.write("var geometries = g;" + System.lineSeparator());
@@ -206,14 +234,17 @@ public final class MyXMLParser {
 		}
 	}
 
-	public void printWKTJSR() throws Exception {
+	public void printWKT_SR_JS() throws Exception {
+		{
+			System.out.println("	" + MyConstants.OUT_WKT_SR_JS);
+		}
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_R_JS));
+			writer = new BufferedWriter(new FileWriter(MyConstants.OUT_WKT_SR_JS));
 			writer.write("var g = [];" + System.lineSeparator());
 			for (MyGeometry myGeo : geoData) {
-				if (myGeo.wkt.length() < MyConstants.WKT_STRING_LIMIT) {
-					writer.write("g.push([" + reduceJS(myGeo.wkt) + "]); // " + myGeo.wkt.length() + System.lineSeparator());
+				if (myGeo.wkt_s.length() < MyConstants.WKT_STRING_LIMIT) {
+					writer.write("g.push([" + reduceJS(myGeo.wkt_s) + "]);" + System.lineSeparator());
 				}
 			}
 			writer.write("var geometries = g;" + System.lineSeparator());
@@ -227,14 +258,14 @@ public final class MyXMLParser {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < reduced.size(); i++) {
 			Pontos x = reduced.get(i);
-			sb.append(x.getTipo());
 			if (i == 0) {
+				sb.append(x.getTipo());
 				sb.append(" (");
+				if (x.getTipo().equals("MULTIPOLYGON")) {
+					sb.append("(");
+				}
 			}
 			sb.append("(");
-			if (x.getTipo().equals("MULTIPOLYGON")) {
-				sb.append("(");
-			}
 			for (int j = 0; j < x.size(); j++) {
 				sb.append(x.get(j));
 				if (j < x.size() - 1) {
@@ -292,10 +323,10 @@ public final class MyXMLParser {
 			boolean add = false;
 			for (int j = 0; j < doubleArray.length; j++) {
 				double d = doubleArray[j];
-				if (doubleArray.length > 50) {
+				if (doubleArray.length > MyConstants.MIN_POINTS_TO_REDUCE) {
 					if (j % 2 == 0) {
 						double diff = Math.abs(d - last);
-						if ((diff > 0.0001) || (j == (doubleArray.length - 2))) {
+						if ((diff > MyConstants.DELTA) || (j == (doubleArray.length - 2))) {
 							doubleList.add(d);
 							last = d;
 							add = true;
@@ -400,14 +431,19 @@ public final class MyXMLParser {
 		public static final int GEOMETRY_S = 1;
 		public static final int GEOMETRY_SR = 2;
 
+		private static final double DELTA = 0.000001;
+		private static final int MIN_POINTS_TO_REDUCE = 50;
+
 		private static final String IN_XML = "./in/in.xml";
 		private static final String OUT_PLSQL = "./out/out.plsql";
 		private static final String OUT_SQL = "./out/out.sql";
-		private static final String OUT_JS = "./out/out.js";
+		private static final String OUT_WKT_ORIG_JS = "./out/out-wkt-orig.js";
+		private static final String OUT_WKT_S_JS = "./out/out-wkt-s.js";
+		private static final String OUT_WKT_SR_JS = "./out/out-wkt-sr.js";
 		private static final String OUT_TXT = "./out/out.txt";
-		public static final String OUT_WKT_TXT = "./out/out-wkt.txt";
-		public static final String OUT_WKT_JS = "./out/out-wkt.js";
-		public static final String OUT_WKT_R_JS = "./out/out-wkt-r.js";
+		private static final String OUT_WKT_ORIG_TXT = "./out/out-wkt-orig.txt";
+		private static final String OUT_WKT_S_TXT = "./out/out-wkt-s.txt";
+		private static final String OUT_WKT_SR_TXT = "./out/out-wkt-sr.txt";
 
 		private static final boolean FIX = false;
 
